@@ -1,0 +1,12 @@
+{
+  "name": "@amzur/lead-scoring",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "clean": "rm -rf node_modules .turbo dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2"
+  }
+}

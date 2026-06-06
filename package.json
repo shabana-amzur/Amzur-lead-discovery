@@ -1,0 +1,39 @@
+{
+  "name": "amzur-lead-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered lead intelligence platform for Amzur Technologies",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "agents/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:generate": "cd packages/database && pnpm db:generate",
+    "db:push": "cd packages/database && pnpm db:push",
+    "db:migrate": "cd packages/database && pnpm db:migrate",
+    "db:studio": "cd packages/database && pnpm db:studio",
+    "scrape:linkedin": "node scripts/scrape-linkedin.js"
+  },
+  "devDependencies": {
+    "@turbo/gen": "^2.0.0",
+    "chalk": "4.1.2",
+    "prettier": "^3.3.2",
+    "turbo": "^2.0.0",
+    "typescript": "^5.5.2"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "dependencies": {
+    "puppeteer": "^22.11.0"
+  }
+}

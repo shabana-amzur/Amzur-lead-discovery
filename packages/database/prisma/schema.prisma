@@ -1,0 +1,215 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id            String   @id @default(cuid())
+  name          String
+  website       String   @unique
+  domain        String?
+  industry      String
+  employeeCount Int?
+  revenue       String?
+  location      String?
+  description   String?
+  technologies  String[] // Tech stack
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  leads        Lead[]
+  contacts     Contact[]
+
+  @@index([industry])
+  @@index([domain])
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status      LeadStatus @default(NEW)
+  score       Int        @default(0)
+  companyFit  Int        @default(0) // 0-35
+  serviceFit  Int        @default(0) // 0-30
+  intentScore Int        @default(0) // 0-25
+  engagement  Int        @default(0) // 0-10
+  source      String? // Where lead was discovered
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  signals       BuyingSignal[]
+  opportunities Opportunity[]
+  outreach      OutreachMessage[]
+
+  @@index([status])
+  @@index([score])
+  @@index([companyId])
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  MEETING_SCHEDULED
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+model BuyingSignal {
+  id          String       @id @default(cuid())
+  leadId      String
+  lead        Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type        SignalType
+  source      String // URL or platform where signal was found
+  content     String // The actual signal content
+  confidence  Int // 0-100
+  detectedAt  DateTime     @default(now())
+  metadata    Json? // Additional structured data
+
+  @@index([leadId])
+  @@index([type])
+  @@index([detectedAt])
+}
+
+enum SignalType {
+  HIRING // Job posting signal
+  TECHNOLOGY // Tech stack signal
+  FUNDING // Funding signal
+  GROWTH // Growth signal
+  PAIN_POINT // Pain point signal
+  NEWS // News mention
+  SOCIAL // Social media signal
+}
+
+model Opportunity {
+  id                   String            @id @default(cuid())
+  leadId               String
+  lead                 Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  serviceType          ServiceType
+  confidence           Int // 0-100
+  recommendedAction    String?
+  estimatedValue       String?
+  estimatedTimeframe   String?
+  keyInsights          String[]
+  status               OpportunityStatus @default(IDENTIFIED)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([leadId])
+  @@index([serviceType])
+  @@index([status])
+}
+
+enum ServiceType {
+  DIGITAL_ENGINEERING
+  CLOUD_SERVICES
+  AI_ML
+  ERP_NETSUITE
+  MANAGED_SERVICES
+  CYBERSECURITY
+}
+
+enum OpportunityStatus {
+  IDENTIFIED
+  QUALIFIED
+  ENGAGED
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  title       String
+  role        String? // CTO, CIO, VP Engineering, etc.
+  email       String?
+  phone       String?
+  linkedinUrl String?
+  department  String?
+  seniority   String? // C-Level, VP, Director, Manager
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  outreach OutreachMessage[]
+
+  @@index([companyId])
+  @@index([role])
+}
+
+model OutreachMessage {
+  id          String        @id @default(cuid())
+  leadId      String
+  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  contactId   String?
+  contact     Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  type        OutreachType
+  subject     String?
+  content     String
+  status      OutreachStatus @default(DRAFT)
+  sentAt      DateTime?
+  openedAt    DateTime?
+  repliedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+}
+
+enum OutreachType {
+  COLD_EMAIL
+  LINKEDIN_MESSAGE
+  DISCOVERY_CALL_SCRIPT
+}
+
+enum OutreachStatus {
+  DRAFT
+  QUEUED
+  SENT
+  OPENED
+  REPLIED
+  BOUNCED
+}
+
+model JobPosting {
+  id          String   @id @default(cuid())
+  companyName String
+  title       String
+  description String
+  location    String?
+  url         String   @unique
+  platform    String // LinkedIn, Indeed, etc.
+  postedDate  DateTime?
+  scrapedAt   DateTime @default(now())
+  processed   Boolean  @default(false)
+
+  @@index([companyName])
+  @@index([processed])
+  @@index([scrapedAt])
+}
+
+model NewsArticle {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  url         String   @unique
+  source      String
+  publishedAt DateTime?
+  scrapedAt   DateTime @default(now())
+  processed   Boolean  @default(false)
+  companies   String[] // Mentioned companies
+
+  @@index([processed])
+  @@index([scrapedAt])
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@amzur/outreach-agent",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "clean": "rm -rf node_modules .turbo dist"
+  },
+  "dependencies": {
+    "@amzur/ai": "workspace:*",
+    "@amzur/database": "workspace:*",
+    "bullmq": "^5.7.14"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.2"
+  }
+}
