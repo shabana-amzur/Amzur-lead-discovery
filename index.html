@@ -52,12 +52,26 @@
             : '';
         
         async function fetchLeads() {
-            const res = await fetch(`${API_BASE_URL}/api/leads`);
-            const data = await res.json();
-            allLeads = data.data;
-            displayStats();
-            displayLeads();
-            populateFilters();
+            try {
+                console.log('Fetching leads from:', `${API_BASE_URL}/api/leads`);
+                const res = await fetch(`${API_BASE_URL}/api/leads`);
+                console.log('Response status:', res.status);
+                const data = await res.json();
+                console.log('Data received:', data);
+                allLeads = data.data || [];
+                displayStats();
+                displayLeads();
+                populateFilters();
+            } catch (error) {
+                console.error('Error fetching leads:', error);
+                document.getElementById('leads').innerHTML = `
+                    <div class="bg-red-900 text-white p-6 rounded-lg">
+                        <h3 class="text-xl font-bold mb-2">Error Loading Leads</h3>
+                        <p>${error.message}</p>
+                        <p class="text-sm mt-2">Check browser console for details</p>
+                    </div>
+                `;
+            }
         }
         
         function displayStats() {
