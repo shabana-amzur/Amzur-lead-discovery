@@ -5,7 +5,8 @@
   "functions": {
     "api/leads.js": {
       "memory": 1024,
-      "maxDuration": 10
+      "maxDuration": 10,
+      "includeFiles": "api/apollo-leads.json"
     },
     "api/cron/fetch-leads.js": {
       "memory": 1024,
