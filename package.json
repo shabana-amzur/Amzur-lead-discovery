@@ -19,7 +19,8 @@
     "db:push": "cd packages/database && pnpm db:push",
     "db:migrate": "cd packages/database && pnpm db:migrate",
     "db:studio": "cd packages/database && pnpm db:studio",
-    "scrape:linkedin": "node scripts/scrape-linkedin.js"
+    "scrape:linkedin": "node scripts/scrape-linkedin.js",
+    "fetch:apollo": "node scripts/fetch-apollo-leads.js"
   },
   "devDependencies": {
     "@turbo/gen": "^2.0.0",

@@ -4,33 +4,27 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 
-// Load LinkedIn leads
-const { getLinkedInLeads } = require('./src/linkedin-leads.js');
+// Start with empty leads array
+const leads = [];
 
-const leads = getLinkedInLeads();
-
-// Load additional leads from TypeScript service file if available
+// Load ONLY Apollo.io leads (no mock/sample data)
 try {
-  const serviceContent = fs.readFileSync(path.join(__dirname, 'src/leads/leads.service.ts'), 'utf8');
-  // Extract the leads array content
-  const match = serviceContent.match(/private leads = \[([\s\S]*?)\n  \];/);
-  if (match) {
-    // Parse additional leads data
-    const leadsString = '[' + match[1] + ']';
-    const additionalLeads = eval(leadsString);
-    // Add unique leads (avoid duplicates)
-    additionalLeads.forEach(lead => {
+  const apolloPath = path.join(__dirname, 'src/apollo-leads.json');
+  if (fs.existsSync(apolloPath)) {
+    const apolloLeads = JSON.parse(fs.readFileSync(apolloPath, 'utf8'));
+    apolloLeads.forEach(lead => {
       if (!leads.find(l => l.id === lead.id)) {
         leads.push(lead);
       }
     });
-    console.log(`✓ Total leads: ${leads.length} (${additionalLeads.length} from service file)`);
+    console.log(`✓ Loaded ${apolloLeads.length} real leads from Apollo.io`);
   }
 } catch (e) {
-  console.log('✓ Using LinkedIn leads only');
+  console.log('✗ No Apollo leads found (run: pnpm fetch:apollo)');
 }
 
-console.log(`✓ Loaded ${leads.length} leads (${leads.filter(l => l.source === 'LinkedIn').length} from LinkedIn)`);
+console.log(`✓ Total: ${leads.length} real Apollo.io leads only`);
+console.log(`   - No mock or sample data included`);
 
 const server = http.createServer((req, res) => {
   // Set CORS headers

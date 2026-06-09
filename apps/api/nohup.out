@@ -1,0 +1,8 @@
+✓ Loaded 8 real leads from Apollo.io
+✓ Total: 8 real Apollo.io leads only
+   - No mock or sample data included
+🚀 Simple API server running on http://localhost:3001
+📊 Serving 8 leads
+📝 API Documentation: http://localhost:3001/leads
+(node:19907) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
