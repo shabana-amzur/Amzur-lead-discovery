@@ -46,8 +46,13 @@
         let allLeads = [];
         let selectedLead = null;
         
+        // Detect if running on Vercel or localhost
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001' 
+            : '';
+        
         async function fetchLeads() {
-            const res = await fetch('http://localhost:3001/leads');
+            const res = await fetch(`${API_BASE_URL}/api/leads`);
             const data = await res.json();
             allLeads = data.data;
             displayStats();
