@@ -6,6 +6,16 @@
     "api/leads.js": {
       "memory": 1024,
       "maxDuration": 10
+    },
+    "api/cron/fetch-leads.js": {
+      "memory": 1024,
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/fetch-leads",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }
