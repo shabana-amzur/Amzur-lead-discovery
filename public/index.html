@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amzur Lead Engine - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold mb-2">Amzur Lead Engine</h1>
+        <p class="text-gray-400 mb-8">Real leads from Apollo.io API</p>
+        
+        <div id="stats" class="grid grid-cols-4 gap-4 mb-8"></div>
+        
+        <div class="flex gap-4 mb-6">
+            <select id="geoFilter" class="bg-gray-800 border border-gray-700 rounded px-4 py-2">
+                <option value="">All Geographies</option>
+            </select>
+            <select id="serviceFilter" class="bg-gray-800 border border-gray-700 rounded px-4 py-2">
+                <option value="">All Services</option>
+            </select>
+            <select id="enquiryFilter" class="bg-gray-800 border border-gray-700 rounded px-4 py-2">
+                <option value="">All Enquiry Types</option>
+            </select>
+        </div>
+        
+        <div id="leads" class="space-y-4"></div>
+    </div>
+
+    <!-- Modal for detailed view -->
+    <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onclick="closeModal(event)">
+        <div class="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="sticky top-0 bg-gray-800 border-b border-gray-700 p-6 flex justify-between items-start">
+                <div>
+                    <h2 id="modalCompanyName" class="text-3xl font-bold mb-2"></h2>
+                    <div id="modalMetadata" class="flex gap-4 text-sm text-gray-400"></div>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="modalContent" class="p-6"></div>
+        </div>
+    </div>
+
+    <script>
+        let allLeads = [];
+        let selectedLead = null;
+        
+        // Detect if running on Vercel or localhost
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001' 
+            : '';
+        
+        async function fetchLeads() {
+            const res = await fetch(`${API_BASE_URL}/api/leads`);
+            const data = await res.json();
+            allLeads = data.data;
+            displayStats();
+            displayLeads();
+            populateFilters();
+        }
+        
+        function displayStats() {
+            const stats = {
+                US: allLeads.filter(l => l.geography === 'US').length,
+                UK: allLeads.filter(l => l.geography === 'UK').length,
+                UAE: allLeads.filter(l => l.geography === 'UAE').length,
+                Australia: allLeads.filter(l => l.geography === 'Australia').length,
+            };
+            
+            document.getElementById('stats').innerHTML = Object.entries(stats)
+                .map(([geo, count]) => `
+                    <div class="bg-gray-800 p-6 rounded-lg cursor-pointer hover:bg-gray-700" onclick="filterByGeo('${geo}')">
+                        <div class="text-3xl font-bold text-blue-400">${count}</div>
+                        <div class="text-gray-400">${geo}</div>
+                    </div>
+                `).join('');
+        }
+        
+        function displayLeads() {
+            const geoFilter = document.getElementById('geoFilter').value;
+            const serviceFilter = document.getElementById('serviceFilter').value;
+            const enquiryFilter = document.getElementById('enquiryFilter').value;
+            
+            let filtered = allLeads;
+            if (geoFilter) filtered = filtered.filter(l => l.geography === geoFilter);
+            if (serviceFilter) filtered = filtered.filter(l => l.serviceMatch === serviceFilter);
+            if (enquiryFilter) filtered = filtered.filter(l => l.enquiryType === enquiryFilter);
+            
+            document.getElementById('leads').innerHTML = filtered.map((lead, index) => `
+                <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-blue-500 cursor-pointer transition-all" data-lead-index="${index}" onclick="showLeadDetailsByIndex(${index})">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-2xl font-bold">${lead.companyName}</h3>
+                            <div class="flex gap-4 mt-2 text-sm text-gray-400">
+                                <span>📍 ${lead.geography}</span>
+                                <span>👥 ${lead.employeeCount || 'N/A'} employees</span>
+                                <span>💼 ${lead.serviceMatch}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-blue-400">${lead.score}</div>
+                            <div class="text-xs text-gray-400">Score</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mb-3">
+                        ${lead.source === 'Apollo.io' ? '<span class="inline-block bg-green-600 text-xs px-3 py-1 rounded-full">🚀 Apollo.io</span>' : ''}
+                        ${lead.source === 'LinkedIn' ? '<span class="inline-block bg-blue-600 text-xs px-3 py-1 rounded-full">💼 LinkedIn</span>' : ''}
+                        ${lead.enquiryType ? `<span class="inline-block bg-purple-600 text-xs px-3 py-1 rounded-full">📋 ${lead.enquiryType}</span>` : ''}
+                    </div>
+                    
+                    <p class="text-gray-300 mb-4">${lead.companyServices || 'No description'}</p>
+                    
+                    <div class="bg-gray-900 p-4 rounded mb-4">
+                        <p class="text-sm text-gray-400 line-clamp-2">${lead.requirement.substring(0, 150)}...</p>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div class="flex gap-2">
+                            ${lead.website ? `<span class="text-xs bg-gray-700 px-2 py-1 rounded">🌐 Website</span>` : ''}
+                            ${lead.companyLinkedin ? `<span class="text-xs bg-gray-700 px-2 py-1 rounded">💼 LinkedIn</span>` : ''}
+                            ${lead.contacts && lead.contacts.length > 0 ? `<span class="text-xs bg-gray-700 px-2 py-1 rounded">👥 ${lead.contacts.length} contacts</span>` : ''}
+                        </div>
+                        <button class="text-blue-400 hover:text-blue-300 text-sm font-semibold">View Details →</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showLeadDetailsByIndex(index) {
+            const geoFilter = document.getElementById('geoFilter').value;
+            const serviceFilter = document.getElementById('serviceFilter').value;
+            const enquiryFilter = document.getElementById('enquiryFilter').value;
+            
+            let filtered = allLeads;
+            if (geoFilter) filtered = filtered.filter(l => l.geography === geoFilter);
+            if (serviceFilter) filtered = filtered.filter(l => l.serviceMatch === serviceFilter);
+            if (enquiryFilter) filtered = filtered.filter(l => l.enquiryType === enquiryFilter);
+            
+            selectedLead = filtered[index];
+            if (!selectedLead) return;
+            
+            document.getElementById('modalCompanyName').textContent = selectedLead.companyName;
+            document.getElementById('modalMetadata').innerHTML = `
+                <span>📍 ${selectedLead.location}</span>
+                <span>👥 ${selectedLead.employeeCount || 'N/A'} employees</span>
+                <span>🏢 ${selectedLead.industry}</span>
+                <span>💯 Score: ${selectedLead.score}</span>
+                ${selectedLead.enquiryType ? `<span>📋 ${selectedLead.enquiryType}</span>` : ''}
+            `;
+            
+            document.getElementById('modalContent').innerHTML = `
+                <!-- Service Match & Source -->
+                <div class="mb-6">
+                    <div class="flex gap-3 mb-3">
+                        <span class="bg-blue-600 px-4 py-2 rounded-full text-sm font-semibold">${selectedLead.serviceMatch}</span>
+                        ${selectedLead.source === 'Apollo.io' ? '<span class="bg-green-600 px-4 py-2 rounded-full text-sm">🚀 Apollo.io</span>' : ''}
+                        ${selectedLead.source === 'LinkedIn' ? '<span class="bg-blue-600 px-4 py-2 rounded-full text-sm">💼 LinkedIn</span>' : ''}
+                        <span class="bg-gray-700 px-4 py-2 rounded-full text-sm">⏰ ${selectedLead.deadline}</span>
+                    </div>
+                </div>
+
+                <!-- Company Description -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold mb-3">Company Overview</h3>
+                    <p class="text-gray-300 bg-gray-900 p-4 rounded">${selectedLead.companyServices}</p>
+                </div>
+
+                <!-- Full Requirement -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold mb-3">Detailed Requirement</h3>
+                    <p class="text-gray-300 bg-gray-900 p-4 rounded leading-relaxed">${selectedLead.requirement}</p>
+                </div>
+
+                <!-- Approach Strategy -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold mb-3">Recommended Approach</h3>
+                    <p class="text-gray-300 bg-gray-900 p-4 rounded">${selectedLead.approachStrategy}</p>
+                </div>
+
+                <!-- Signals -->
+                ${selectedLead.signals && selectedLead.signals.length > 0 ? `
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold mb-3">Buying Signals</h3>
+                        <div class="space-y-3">
+                            ${selectedLead.signals.map(signal => `
+                                <div class="bg-gray-900 p-4 rounded">
+                                    <div class="font-semibold text-blue-400 mb-1">${signal.type}</div>
+                                    <div class="text-gray-300 text-sm">${signal.content}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Contacts -->
+                ${selectedLead.contacts && selectedLead.contacts.length > 0 ? `
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold mb-3">Key Contacts (${selectedLead.contacts.length})</h3>
+                        <div class="grid gap-3">
+                            ${selectedLead.contacts.map(contact => `
+                                <div class="bg-gray-900 p-4 rounded border border-gray-700">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <div class="font-semibold text-lg">${contact.name}</div>
+                                            <div class="text-gray-400 text-sm">${contact.title}</div>
+                                            ${contact.decisionMaker ? '<span class="inline-block bg-green-600 text-xs px-2 py-1 rounded mt-1">Decision Maker</span>' : ''}
+                                        </div>
+                                    </div>
+                                    ${contact.email ? `<div class="text-sm mt-2">📧 <a href="mailto:${contact.email}" class="text-blue-400 hover:underline">${contact.email}</a></div>` : ''}
+                                    ${contact.phone ? `<div class="text-sm mt-1">📞 ${contact.phone}</div>` : ''}
+                                    ${contact.linkedin ? `<div class="text-sm mt-1">💼 <a href="${contact.linkedin}" target="_blank" class="text-blue-400 hover:underline">LinkedIn Profile</a></div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : '<div class="mb-6 bg-gray-900 p-4 rounded text-gray-400">No contacts available. Use LinkedIn to find decision makers.</div>'}
+
+                <!-- Action Links -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold mb-3">Quick Actions</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        ${selectedLead.website ? `<a href="${selectedLead.website}" target="_blank" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded text-center font-semibold">🌐 Visit Website</a>` : ''}
+                        ${selectedLead.companyLinkedin ? `<a href="${selectedLead.companyLinkedin}" target="_blank" class="bg-blue-800 hover:bg-blue-900 px-6 py-3 rounded text-center font-semibold">💼 LinkedIn Company</a>` : ''}
+                        ${selectedLead.companyEmail ? `<a href="mailto:${selectedLead.companyEmail}" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded text-center font-semibold">📧 Send Email</a>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+        
+        function closeModal(event) {
+            if (event && event.target.id !== 'detailModal') return;
+            document.getElementById('detailModal').classList.add('hidden');
+            selectedLead = null;
+        }
+        
+        function populateFilters() {
+            const geos = [...new Set(allLeads.map(l => l.geography))];
+            const services = [...new Set(allLeads.map(l => l.serviceMatch))];
+            const enquiryTypes = [...new Set(allLeads.map(l => l.enquiryType).filter(Boolean))];
+            
+            document.getElementById('geoFilter').innerHTML = '<option value="">All Geographies</option>' +
+                geos.map(g => `<option value="${g}">${g}</option>`).join('');
+            
+            document.getElementById('serviceFilter').innerHTML = '<option value="">All Services</option>' +
+                services.map(s => `<option value="${s}">${s}</option>`).join('');
+            
+            document.getElementById('enquiryFilter').innerHTML = '<option value="">All Enquiry Types</option>' +
+                enquiryTypes.map(e => `<option value="${e}">${e}</option>`).join('');
+        }
+        
+        function filterByGeo(geo) {
+            document.getElementById('geoFilter').value = geo;
+            displayLeads();
+        }
+        
+        document.getElementById('geoFilter').addEventListener('change', displayLeads);
+        document.getElementById('serviceFilter').addEventListener('change', displayLeads);
+        document.getElementById('enquiryFilter').addEventListener('change', displayLeads);
+        
+        fetchLeads();
+    </script>
+</body>
+</html>
