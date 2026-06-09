@@ -3,7 +3,7 @@
   "buildCommand": "",
   "outputDirectory": "public",
   "functions": {
-    "api/index.js": {
+    "api/leads.js": {
       "memory": 1024,
       "maxDuration": 10
     }
